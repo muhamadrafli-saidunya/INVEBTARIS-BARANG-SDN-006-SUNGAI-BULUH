@@ -73,6 +73,7 @@ export interface InventoryItem {
   hargaSatuan: number;
   tanggalPerolehan: string;
   keterangan: string;
+  fotoBarang?: string;
   ownerId: string;
   createdAt: string;
   updatedAt: string;
@@ -103,6 +104,7 @@ export interface InventoryFormValues {
   hargaSatuan: number;
   tanggalPerolehan: string;
   keterangan: string;
+  fotoBarang?: string;
 }
 
 export interface RoomFormValues {
@@ -160,6 +162,7 @@ export const BLUEPRINT_CONSTRAINTS = {
   maxNamaBarangLength: 120,
   maxRuanganLength: 80,
   maxKeteranganLength: 400,
+  maxFotoBarangLength: 250000,
   maxKodeRuangLength: 30,
   maxPenanggungJawabLength: 80,
   maxLokasiLength: 100,
@@ -198,6 +201,18 @@ export function validateInventoryForm(values: InventoryFormValues): Record<strin
 
   if (values.keterangan.length > BLUEPRINT_CONSTRAINTS.maxKeteranganLength) {
     errors.keterangan = `Keterangan maksimal ${BLUEPRINT_CONSTRAINTS.maxKeteranganLength} karakter.`;
+  }
+
+  const foto = String(values.fotoBarang ?? '').trim();
+  if (foto) {
+    if (foto.length > BLUEPRINT_CONSTRAINTS.maxFotoBarangLength) {
+      errors.fotoBarang = 'Ukuran gambar terlalu besar untuk disimpan ke database.';
+    } else if (
+      !/^https?:\/\/\S+$/i.test(foto) &&
+      !/^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(foto)
+    ) {
+      errors.fotoBarang = 'Gambar harus berupa unggahan foto valid atau URL http(s)://.';
+    }
   }
 
   return errors;

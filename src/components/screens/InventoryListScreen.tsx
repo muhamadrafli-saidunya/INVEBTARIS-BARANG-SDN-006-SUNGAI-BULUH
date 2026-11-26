@@ -6,6 +6,7 @@ import {
   Edit3,
   Eye,
   FileSpreadsheet,
+  ImageIcon,
   MoreHorizontal,
   Plus,
   RotateCcw,
@@ -497,16 +498,42 @@ export function InventoryListScreen({
                       <TableCell className="font-mono text-xs font-medium text-[#00529C] dark:text-sky-400 whitespace-nowrap">
                         {item.kodeBarang}
                       </TableCell>
-                      <TableCell className="min-w-[200px]">
-                        <button
-                          type="button"
-                          onClick={() => onViewDetail(item)}
-                          className="text-left font-medium text-slate-900 dark:text-slate-100 hover:text-[#00529C] dark:hover:text-sky-400 cursor-pointer"
-                        >
-                          {item.namaBarang}
-                        </button>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {item.kategori} · {item.sumberDana}
+                      <TableCell className="min-w-[220px]">
+                        <div className="flex items-center gap-3">
+                          {item.fotoBarang ? (
+                            <button
+                              type="button"
+                              onClick={() => onViewDetail(item)}
+                              aria-label={`Lihat foto ${item.namaBarang}`}
+                              className="h-9 w-9 rounded-md overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shrink-0 cursor-pointer"
+                            >
+                              <img
+                                src={item.fotoBarang}
+                                alt={item.namaBarang}
+                                referrerPolicy="no-referrer"
+                                className="h-full w-full object-cover"
+                              />
+                            </button>
+                          ) : (
+                            <span
+                              aria-hidden="true"
+                              className="flex h-9 w-9 items-center justify-center rounded-md border border-slate-200/80 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-300 dark:text-slate-600 shrink-0"
+                            >
+                              <ImageIcon className="h-4 w-4" />
+                            </span>
+                          )}
+                          <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => onViewDetail(item)}
+                              className="text-left font-medium text-slate-900 dark:text-slate-100 hover:text-[#00529C] dark:hover:text-sky-400 cursor-pointer"
+                            >
+                              {item.namaBarang}
+                            </button>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                              {item.kategori} · {item.sumberDana}
+                            </div>
+                          </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-xs whitespace-nowrap">{item.ruangan}</TableCell>

@@ -162,6 +162,11 @@
           "type": "string",
           "maxLength": 400
         },
+        "fotoBarang": {
+          "type": "string",
+          "description": "Foto dokumentasi atau URL gambar penunjang barang inventaris.",
+          "maxLength": 250000
+        },
         "ownerId": {
           "type": "string",
           "pattern": "^[a-zA-Z0-9_\\-]+$",

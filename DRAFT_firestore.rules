@@ -73,7 +73,7 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'id', 'kodeBarang', 'namaBarang', 'kategori', 'ruangan', 'roomId',
           'jumlah', 'satuan', 'kondisi', 'statusVerifikasi', 'sumberDana',
-          'hargaSatuan', 'tanggalPerolehan', 'keterangan', 'ownerId', 'createdAt', 'updatedAt'
+          'hargaSatuan', 'tanggalPerolehan', 'keterangan', 'fotoBarang', 'ownerId', 'createdAt', 'updatedAt'
         ])
         && isValidId(data.id)
         && data.kodeBarang is string && data.kodeBarang.size() >= 3 && data.kodeBarang.size() <= 40 && data.kodeBarang.matches('^[A-Z0-9._\\-]+$')
@@ -89,6 +89,7 @@ service cloud.firestore {
         && data.hargaSatuan is number && data.hargaSatuan >= 0 && data.hargaSatuan <= 10000000000
         && data.tanggalPerolehan is string && data.tanggalPerolehan.size() == 10 && data.tanggalPerolehan.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && data.keterangan is string && data.keterangan.size() <= 400
+        && (!('fotoBarang' in data) || (data.fotoBarang is string && data.fotoBarang.size() <= 250000 && (data.fotoBarang == '' || data.fotoBarang.matches('^(https?://|data:image/(jpeg|jpg|png|webp);base64,).*'))))
         && isValidId(data.ownerId)
         && data.createdAt is timestamp
         && data.updatedAt is timestamp;
@@ -218,7 +219,7 @@ service cloud.firestore {
             && incoming().diff(existing()).affectedKeys().hasOnly([
               'kodeBarang', 'namaBarang', 'kategori', 'ruangan', 'roomId',
               'jumlah', 'satuan', 'kondisi', 'statusVerifikasi', 'sumberDana',
-              'hargaSatuan', 'tanggalPerolehan', 'keterangan', 'updatedAt'
+              'hargaSatuan', 'tanggalPerolehan', 'keterangan', 'fotoBarang', 'updatedAt'
             ]))
           || (existing().statusVerifikasi == 'Menunggu Penghapusan'
             && incoming().diff(existing()).affectedKeys().hasOnly(['statusVerifikasi', 'keterangan', 'updatedAt']))

@@ -29,6 +29,7 @@ import {
   OperationType,
 } from '@/src/lib/firebase';
 import { generateSafeId } from '@/src/lib/utils';
+import { sanitizeFotoBarang } from '@/src/lib/imageUtils';
 import {
   buildSeedAuditLogs,
   buildSeedInventory,
@@ -348,6 +349,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
             hargaSatuan: Number(data.hargaSatuan || 0),
             tanggalPerolehan: String(data.tanggalPerolehan || ''),
             keterangan: String(data.keterangan || ''),
+            fotoBarang: data.fotoBarang ? String(data.fotoBarang) : '',
             ownerId: String(data.ownerId || ''),
             createdAt: parseTimestamp(data.createdAt),
             updatedAt: parseTimestamp(data.updatedAt),
@@ -503,6 +505,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       hargaSatuan: Math.max(0, Math.min(10000000000, Number(values.hargaSatuan))),
       tanggalPerolehan: values.tanggalPerolehan,
       keterangan: values.keterangan.trim().slice(0, BLUEPRINT_CONSTRAINTS.maxKeteranganLength),
+      fotoBarang: sanitizeFotoBarang(values.fotoBarang),
       ownerId,
       createdAt: now,
       updatedAt: now,
@@ -581,6 +584,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
         hargaSatuan: Math.max(0, Math.min(10000000000, Number(values.hargaSatuan))),
         tanggalPerolehan: values.tanggalPerolehan,
         keterangan: values.keterangan.trim().slice(0, BLUEPRINT_CONSTRAINTS.maxKeteranganLength),
+        fotoBarang: sanitizeFotoBarang(values.fotoBarang),
         ownerId,
         createdAt: now,
         updatedAt: now,
@@ -677,6 +681,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
       hargaSatuan: Math.max(0, Math.min(10000000000, Number(values.hargaSatuan))),
       tanggalPerolehan: values.tanggalPerolehan,
       keterangan: values.keterangan.trim().slice(0, BLUEPRINT_CONSTRAINTS.maxKeteranganLength),
+      fotoBarang: sanitizeFotoBarang(values.fotoBarang),
     };
 
     const logEntry: AuditLog = {
@@ -1142,6 +1147,7 @@ export function InventoryProvider({ children }: { children: React.ReactNode }) {
           ? it.tanggalPerolehan
           : now.slice(0, 10),
         keterangan: String(it.keterangan || '').trim().slice(0, BLUEPRINT_CONSTRAINTS.maxKeteranganLength),
+        fotoBarang: sanitizeFotoBarang(it.fotoBarang),
         ownerId,
         createdAt: now,
         updatedAt: now,

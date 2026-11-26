@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ImagePlus, Link2, Trash2, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/src/components/ui/button';
 import {
   Dialog,
@@ -12,6 +14,7 @@ import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { SimpleSelect } from '@/src/components/ui/select';
 import { Textarea } from '@/src/components/ui/textarea';
+import { compressInventoryImage } from '@/src/lib/imageUtils';
 import { formatIDR } from '@/src/lib/utils';
 import {
   KATEGORI_LIST,
@@ -55,14 +58,22 @@ export function ItemFormModal({
     hargaSatuan: 0,
     tanggalPerolehan: DEFAULT_DATE,
     keterangan: '',
+    fotoBarang: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [imageInputMode, setImageInputMode] = useState<'upload' | 'url'>('upload');
+  const [processingImage, setProcessingImage] = useState(false);
+  const [imagePreviewError, setImagePreviewError] = useState(false);
+  const imageFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (open) {
       setErrors({});
+      setImagePreviewError(false);
       if (editingItem) {
+        const existingFoto = editingItem.fotoBarang || '';
+        setImageInputMode(existingFoto.startsWith('http') ? 'url' : 'upload');
         setValues({
           kodeBarang: editingItem.kodeBarang,
           namaBarang: editingItem.namaBarang,
@@ -76,8 +87,10 @@ export function ItemFormModal({
           hargaSatuan: editingItem.hargaSatuan,
           tanggalPerolehan: editingItem.tanggalPerolehan,
           keterangan: editingItem.keterangan,
+          fotoBarang: existingFoto,
         });
       } else {
+        setImageInputMode('upload');
         setValues({
           kodeBarang: `KIB-B.${String(Math.floor(10 + Math.random() * 89))}.${String(
             Math.floor(100 + Math.random() * 899)
@@ -93,10 +106,52 @@ export function ItemFormModal({
           hargaSatuan: 500000,
           tanggalPerolehan: DEFAULT_DATE,
           keterangan: '',
+          fotoBarang: '',
         });
+      }
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = '';
       }
     }
   }, [open, editingItem, rooms]);
+
+  const handleImageFileChange = async (file: File | undefined) => {
+    if (!file) return;
+    setProcessingImage(true);
+    setImagePreviewError(false);
+    try {
+      const compressedDataUrl = await compressInventoryImage(file);
+      setValues((prev) => ({ ...prev, fotoBarang: compressedDataUrl }));
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.fotoBarang;
+        return next;
+      });
+      toast.success('Gambar penunjang berhasil dimuat.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Gagal memproses gambar.';
+      setErrors((prev) => ({ ...prev, fotoBarang: msg }));
+      toast.error(msg);
+    } finally {
+      setProcessingImage(false);
+      if (imageFileInputRef.current) {
+        imageFileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setValues((prev) => ({ ...prev, fotoBarang: '' }));
+    setImagePreviewError(false);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.fotoBarang;
+      return next;
+    });
+    if (imageFileInputRef.current) {
+      imageFileInputRef.current.value = '';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -314,6 +369,163 @@ export function ItemFormModal({
             )}
           </div>
 
+          {/* Menu Input Gambar Penunjang Inventaris */}
+          <div className="space-y-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/50 p-3.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <ImagePlus className="h-4 w-4 text-[#00529C] dark:text-sky-400" />
+                <Label className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                  Foto / Gambar Penunjang Barang (Opsional)
+                </Label>
+              </div>
+              <div className="inline-flex items-center gap-1 rounded-lg bg-slate-200/70 dark:bg-slate-800 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => setImageInputMode('upload')}
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
+                    imageInputMode === 'upload'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529C] dark:text-sky-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Upload className="h-3 w-3" />
+                  <span>Unggah Foto</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageInputMode('url')}
+                  className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-[11px] font-medium transition-colors cursor-pointer ${
+                    imageInputMode === 'url'
+                      ? 'bg-white dark:bg-slate-900 text-[#00529C] dark:text-sky-400 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+                >
+                  <Link2 className="h-3 w-3" />
+                  <span>Tautan URL</span>
+                </button>
+              </div>
+            </div>
+
+            <input
+              ref={imageFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={(e) => void handleImageFileChange(e.target.files?.[0])}
+              className="hidden"
+            />
+
+            {imageInputMode === 'upload' ? (
+              !values.fotoBarang ? (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => !processingImage && imageFileInputRef.current?.click()}
+                  onKeyDown={(e) => {
+                    if ((e.key === 'Enter' || e.key === ' ') && !processingImage) {
+                      imageFileInputRef.current?.click();
+                    }
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (!processingImage) {
+                      void handleImageFileChange(e.dataTransfer.files?.[0]);
+                    }
+                  }}
+                  className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950/60 px-4 py-4 text-center hover:border-[#00529C] dark:hover:border-sky-400 transition-colors cursor-pointer"
+                >
+                  <Upload className="h-5 w-5 text-[#00529C] dark:text-sky-400 mb-1.5" />
+                  <p className="text-xs font-medium text-slate-700 dark:text-slate-200">
+                    {processingImage
+                      ? 'Mengompresi & memproses gambar...'
+                      : 'Klik atau seret foto barang ke sini'}
+                  </p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5">
+                    Mendukung JPG, PNG, WebP (otomatis dikompresi agar hemat penyimpanan)
+                  </p>
+                </div>
+              ) : null
+            ) : (
+              <div className="space-y-1.5">
+                <Input
+                  type="url"
+                  value={values.fotoBarang?.startsWith('data:') ? '' : values.fotoBarang || ''}
+                  onChange={(e) => {
+                    setImagePreviewError(false);
+                    setValues((prev) => ({ ...prev, fotoBarang: e.target.value }));
+                    if (errors.fotoBarang) {
+                      setErrors((prev) => {
+                        const next = { ...prev };
+                        delete next.fotoBarang;
+                        return next;
+                      });
+                    }
+                  }}
+                  placeholder="https://contoh.sch.id/foto-barang.jpg"
+                />
+              </div>
+            )}
+
+            {values.fotoBarang && (
+              <div className="flex items-center gap-3 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-2.5">
+                {!imagePreviewError ? (
+                  <img
+                    src={values.fotoBarang}
+                    alt="Pratinjau gambar barang"
+                    referrerPolicy="no-referrer"
+                    onError={() => setImagePreviewError(true)}
+                    className="h-16 w-16 rounded-md object-cover border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 shrink-0"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-md border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-400 text-center p-1 shrink-0">
+                    Pratinjau gagal
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                    {values.fotoBarang.startsWith('data:')
+                      ? 'Foto Terlampir (Terkompresi)'
+                      : 'Gambar dari Tautan URL'}
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    {values.fotoBarang.startsWith('data:')
+                      ? `Ukuran tersimpan ~${Math.max(1, Math.round((values.fotoBarang.length * 0.75) / 1024))} KB`
+                      : values.fotoBarang}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {imageInputMode === 'upload' && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => imageFileInputRef.current?.click()}
+                      disabled={processingImage || submitting}
+                      className="h-8 px-2.5 text-xs"
+                    >
+                      Ganti
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Hapus gambar penunjang"
+                    onClick={handleRemoveImage}
+                    disabled={processingImage || submitting}
+                    className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {errors.fotoBarang && (
+              <p className="text-xs text-red-600 dark:text-red-400">{errors.fotoBarang}</p>
+            )}
+          </div>
+
           <div className="flex items-center justify-between rounded-lg bg-slate-50 dark:bg-slate-800/70 px-4 py-2.5 text-xs">
             <span className="text-slate-500 dark:text-slate-400">Estimasi Total Nilai Aset</span>
             <span className="font-mono text-sm font-semibold text-[#00529C] dark:text-sky-400 tabular-nums">
@@ -326,11 +538,11 @@ export function ItemFormModal({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
-              disabled={submitting}
+              disabled={submitting || processingImage}
             >
               Batal
             </Button>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" disabled={submitting || processingImage}>
               {submitting
                 ? 'Menyimpan...'
                 : editingItem

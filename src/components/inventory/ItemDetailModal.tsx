@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Calendar, Edit3, MapPin, ShieldCheck, Trash2 } from 'lucide-react';
+import { Calendar, Edit3, ImageOff, MapPin, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import {
   Dialog,
@@ -48,12 +48,14 @@ export function ItemDetailModal({
   const [statusVerifikasi, setStatusVerifikasi] = useState<StatusVerifikasi>('Terverifikasi');
   const [catatan, setCatatan] = useState('');
   const [savingAudit, setSavingAudit] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     if (item) {
       setKondisi(item.kondisi);
       setStatusVerifikasi(item.statusVerifikasi);
       setCatatan('');
+      setImgError(false);
     }
   }, [item]);
 
@@ -95,6 +97,28 @@ export function ItemDetailModal({
             <KondisiBadge kondisi={item.kondisi} />
             <VerifikasiBadge status={item.statusVerifikasi} />
           </div>
+
+          {item.fotoBarang && (
+            <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+              {!imgError ? (
+                <img
+                  src={item.fotoBarang}
+                  alt={`Foto dokumentasi ${item.namaBarang}`}
+                  referrerPolicy="no-referrer"
+                  onError={() => setImgError(true)}
+                  className="max-h-60 w-full object-contain bg-slate-100/80 dark:bg-slate-900"
+                />
+              ) : (
+                <div className="flex items-center justify-center gap-2 py-8 text-xs text-slate-400">
+                  <ImageOff className="h-4 w-4" />
+                  <span>Gambar penunjang tidak dapat dimuat.</span>
+                </div>
+              )}
+              <div className="border-t border-slate-100 dark:border-slate-800 px-3 py-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                Foto dokumentasi penunjang inventaris
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border-y border-slate-100 dark:border-slate-800 py-4 text-sm">
             <div>
