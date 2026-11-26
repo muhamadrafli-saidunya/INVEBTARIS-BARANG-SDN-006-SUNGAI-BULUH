@@ -1,0 +1,275 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(uid) {
+      return isVerified() && request.auth.uid == uid;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerified() && request.auth.token.email == 'muhamad.rafli@gmail.com';
+    }
+
+    // 3. Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'role', 'photoURL', 'createdAt', 'updatedAt'])
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.role in ['admin', 'operator', 'kepala_sekolah']
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidRoom(data) {
+      return data.keys().hasAll(['id', 'kodeRuang', 'namaRuang', 'penanggungJawab', 'kapasitasBarang', 'lokasi', 'ownerId', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'kodeRuang', 'namaRuang', 'penanggungJawab', 'kapasitasBarang', 'lokasi', 'ownerId', 'createdAt', 'updatedAt'])
+        && isValidId(data.id)
+        && data.kodeRuang is string && data.kodeRuang.size() >= 2 && data.kodeRuang.size() <= 30 && data.kodeRuang.matches('^[A-Z0-9._\\-]+$')
+        && data.namaRuang is string && data.namaRuang.size() >= 2 && data.namaRuang.size() <= 80
+        && data.penanggungJawab is string && data.penanggungJawab.size() >= 2 && data.penanggungJawab.size() <= 80
+        && data.kapasitasBarang is number && data.kapasitasBarang >= 1 && data.kapasitasBarang <= 100000
+        && data.lokasi is string && data.lokasi.size() >= 2 && data.lokasi.size() <= 100
+        && isValidId(data.ownerId)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidInventoryItem(data) {
+      return data.keys().hasAll([
+          'id', 'kodeBarang', 'namaBarang', 'kategori', 'ruangan', 'roomId',
+          'jumlah', 'satuan', 'kondisi', 'statusVerifikasi', 'sumberDana',
+          'hargaSatuan', 'tanggalPerolehan', 'keterangan', 'ownerId', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'kodeBarang', 'namaBarang', 'kategori', 'ruangan', 'roomId',
+          'jumlah', 'satuan', 'kondisi', 'statusVerifikasi', 'sumberDana',
+          'hargaSatuan', 'tanggalPerolehan', 'keterangan', 'ownerId', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && data.kodeBarang is string && data.kodeBarang.size() >= 3 && data.kodeBarang.size() <= 40 && data.kodeBarang.matches('^[A-Z0-9._\\-]+$')
+        && data.namaBarang is string && data.namaBarang.size() >= 2 && data.namaBarang.size() <= 120
+        && data.kategori in ['Mebel & Furnitur', 'Elektronik & IT', 'Alat Peraga', 'Buku & Perpustakaan', 'Olahraga & UKS', 'Operasional Kantor']
+        && data.ruangan is string && data.ruangan.size() >= 2 && data.ruangan.size() <= 80
+        && isValidId(data.roomId)
+        && data.jumlah is number && data.jumlah >= 0 && data.jumlah <= 1000000
+        && data.satuan in ['Unit', 'Buah', 'Set', 'Eksemplar', 'Paket']
+        && data.kondisi in ['Baik', 'Rusak Ringan', 'Rusak Berat']
+        && data.statusVerifikasi in ['Terverifikasi', 'Perlu Audit', 'Menunggu Penghapusan']
+        && data.sumberDana in ['BOS Reguler', 'BOS Daerah', 'APBD', 'Hibah Komite']
+        && data.hargaSatuan is number && data.hargaSatuan >= 0 && data.hargaSatuan <= 10000000000
+        && data.tanggalPerolehan is string && data.tanggalPerolehan.size() == 10 && data.tanggalPerolehan.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+        && data.keterangan is string && data.keterangan.size() <= 400
+        && isValidId(data.ownerId)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['id', 'itemId', 'kodeBarang', 'namaBarang', 'aksi', 'catatan', 'petugas', 'ownerId', 'createdAt'])
+        && data.keys().hasOnly(['id', 'itemId', 'kodeBarang', 'namaBarang', 'aksi', 'catatan', 'petugas', 'ownerId', 'createdAt'])
+        && isValidId(data.id)
+        && isValidId(data.itemId)
+        && data.kodeBarang is string && data.kodeBarang.size() >= 3 && data.kodeBarang.size() <= 40
+        && data.namaBarang is string && data.namaBarang.size() >= 2 && data.namaBarang.size() <= 120
+        && data.aksi in ['Tambah Barang', 'Perbarui Data', 'Audit Kondisi', 'Hapus Barang']
+        && data.catatan is string && data.catatan.size() <= 300
+        && data.petugas is string && data.petugas.size() >= 1 && data.petugas.size() <= 100
+        && isValidId(data.ownerId)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidSchoolProfile(data) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'namaSekolah', 'npsn', 'statusAkreditasi',
+          'alamat', 'kecamatan', 'kabupaten', 'provinsi', 'kodePos',
+          'telepon', 'emailSekolah', 'kepalaSekolah', 'nipKepalaSekolah',
+          'pengurusBarang', 'tahunAnggaran', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'ownerId', 'namaSekolah', 'npsn', 'statusAkreditasi',
+          'alamat', 'kecamatan', 'kabupaten', 'provinsi', 'kodePos',
+          'telepon', 'emailSekolah', 'kepalaSekolah', 'nipKepalaSekolah',
+          'pengurusBarang', 'tahunAnggaran', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.id)
+        && isValidId(data.ownerId)
+        && data.namaSekolah is string && data.namaSekolah.size() >= 2 && data.namaSekolah.size() <= 120
+        && data.npsn is string && data.npsn.size() >= 4 && data.npsn.size() <= 16 && data.npsn.matches('^[0-9]{4,16}$')
+        && data.statusAkreditasi in ['A', 'B', 'C', 'Belum Terakreditasi']
+        && data.alamat is string && data.alamat.size() >= 2 && data.alamat.size() <= 200
+        && data.kecamatan is string && data.kecamatan.size() >= 2 && data.kecamatan.size() <= 80
+        && data.kabupaten is string && data.kabupaten.size() >= 2 && data.kabupaten.size() <= 80
+        && data.provinsi is string && data.provinsi.size() >= 2 && data.provinsi.size() <= 80
+        && data.kodePos is string && data.kodePos.size() == 5 && data.kodePos.matches('^[0-9]{5}$')
+        && data.telepon is string && data.telepon.size() <= 30
+        && data.emailSekolah is string && data.emailSekolah.size() >= 3 && data.emailSekolah.size() <= 160
+        && data.kepalaSekolah is string && data.kepalaSekolah.size() >= 2 && data.kepalaSekolah.size() <= 100
+        && data.nipKepalaSekolah is string && data.nipKepalaSekolah.size() <= 30
+        && data.pengurusBarang is string && data.pengurusBarang.size() >= 2 && data.pengurusBarang.size() <= 100
+        && data.tahunAnggaran is string && data.tahunAnggaran.size() == 4 && data.tahunAnggaran.matches('^[0-9]{4}$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // 4. Collection Rules
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isBootstrappedAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create: if isValidId(userId)
+        && isOwner(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == userId
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (incoming().role in ['operator', 'kepala_sekolah'] || isBootstrappedAdmin());
+      allow update: if isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (isOwner(userId)
+            && incoming().role == existing().role
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']))
+          || (isBootstrappedAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'role', 'photoURL', 'updatedAt']))
+        );
+      allow delete: if isValidId(userId) && isBootstrappedAdmin();
+    }
+
+    match /rooms/{roomId} {
+      allow get: if isValidId(roomId) && isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow list: if isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isValidId(roomId)
+        && isVerified()
+        && isValidRoom(incoming())
+        && incoming().id == roomId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(roomId)
+        && isVerified()
+        && isValidRoom(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (existing().ownerId == request.auth.uid || isBootstrappedAdmin())
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'kodeRuang', 'namaRuang', 'penanggungJawab', 'kapasitasBarang', 'lokasi', 'updatedAt'
+        ]);
+      allow delete: if isValidId(roomId) && isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+    }
+
+    match /inventory_items/{itemId} {
+      allow get: if isValidId(itemId) && isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow list: if isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isValidId(itemId)
+        && isVerified()
+        && isValidInventoryItem(incoming())
+        && incoming().id == itemId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && exists(/databases/$(database)/documents/rooms/$(incoming().roomId))
+        && get(/databases/$(database)/documents/rooms/$(incoming().roomId)).data.ownerId == request.auth.uid;
+      allow update: if isValidId(itemId)
+        && isVerified()
+        && isValidInventoryItem(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (existing().ownerId == request.auth.uid || isBootstrappedAdmin())
+        && exists(/databases/$(database)/documents/rooms/$(incoming().roomId))
+        && get(/databases/$(database)/documents/rooms/$(incoming().roomId)).data.ownerId == existing().ownerId
+        && (
+          isBootstrappedAdmin()
+          || (existing().statusVerifikasi != 'Menunggu Penghapusan'
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'kodeBarang', 'namaBarang', 'kategori', 'ruangan', 'roomId',
+              'jumlah', 'satuan', 'kondisi', 'statusVerifikasi', 'sumberDana',
+              'hargaSatuan', 'tanggalPerolehan', 'keterangan', 'updatedAt'
+            ]))
+          || (existing().statusVerifikasi == 'Menunggu Penghapusan'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['statusVerifikasi', 'keterangan', 'updatedAt']))
+        );
+      allow delete: if isValidId(itemId) && isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+    }
+
+    match /audit_logs/{logId} {
+      allow get: if isValidId(logId) && isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow list: if isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isValidId(logId)
+        && isVerified()
+        && isValidAuditLog(incoming())
+        && incoming().id == logId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/inventory_items/$(incoming().itemId));
+      allow update: if false;
+      allow delete: if isValidId(logId) && isBootstrappedAdmin();
+    }
+
+    match /school_profiles/{profileId} {
+      allow get: if isValidId(profileId) && isVerified() && (existing().ownerId == request.auth.uid || isOwner(profileId) || isBootstrappedAdmin());
+      allow list: if isVerified() && (existing().ownerId == request.auth.uid || isBootstrappedAdmin());
+      allow create: if isValidId(profileId)
+        && isVerified()
+        && isValidSchoolProfile(incoming())
+        && incoming().id == profileId
+        && incoming().ownerId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isValidId(profileId)
+        && isVerified()
+        && isValidSchoolProfile(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerId == existing().ownerId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (existing().ownerId == request.auth.uid || isBootstrappedAdmin())
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'namaSekolah', 'npsn', 'statusAkreditasi', 'alamat', 'kecamatan',
+          'kabupaten', 'provinsi', 'kodePos', 'telepon', 'emailSekolah',
+          'kepalaSekolah', 'nipKepalaSekolah', 'pengurusBarang', 'tahunAnggaran', 'updatedAt'
+        ]);
+      allow delete: if isValidId(profileId) && isBootstrappedAdmin();
+    }
+
+    // Startup connection check document (read-only ping)
+    match /test/connection {
+      allow get: if isSignedIn();
+    }
+  }
+}

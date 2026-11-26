@@ -1,0 +1,384 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Profil pengguna pengelola inventaris SDN 006 Sungai Buluh.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "operator", "kepala_sekolah"]
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "role", "createdAt", "updatedAt"]
+    },
+    "Room": {
+      "title": "Room",
+      "description": "Data ruangan dan lokasi penyimpanan aset sekolah SDN 006 Sungai Buluh.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "kodeRuang": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 30,
+          "pattern": "^[A-Z0-9._\\-]+$"
+        },
+        "namaRuang": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "penanggungJawab": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "kapasitasBarang": {
+          "type": "number"
+        },
+        "lokasi": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "kodeRuang", "namaRuang", "penanggungJawab", "kapasitasBarang", "lokasi", "ownerId", "createdAt", "updatedAt"]
+    },
+    "InventoryItem": {
+      "title": "InventoryItem",
+      "description": "Catatan barang inventaris milik SDN 006 Sungai Buluh.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "kodeBarang": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40,
+          "pattern": "^[A-Z0-9._\\-]+$"
+        },
+        "namaBarang": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "kategori": {
+          "type": "string",
+          "enum": [
+            "Mebel & Furnitur",
+            "Elektronik & IT",
+            "Alat Peraga",
+            "Buku & Perpustakaan",
+            "Olahraga & UKS",
+            "Operasional Kantor"
+          ]
+        },
+        "ruangan": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "roomId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "jumlah": {
+          "type": "number"
+        },
+        "satuan": {
+          "type": "string",
+          "enum": ["Unit", "Buah", "Set", "Eksemplar", "Paket"]
+        },
+        "kondisi": {
+          "type": "string",
+          "enum": ["Baik", "Rusak Ringan", "Rusak Berat"]
+        },
+        "statusVerifikasi": {
+          "type": "string",
+          "enum": ["Terverifikasi", "Perlu Audit", "Menunggu Penghapusan"]
+        },
+        "sumberDana": {
+          "type": "string",
+          "enum": ["BOS Reguler", "BOS Daerah", "APBD", "Hibah Komite"]
+        },
+        "hargaSatuan": {
+          "type": "number"
+        },
+        "tanggalPerolehan": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "maxLength": 10
+        },
+        "keterangan": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "kodeBarang",
+        "namaBarang",
+        "kategori",
+        "ruangan",
+        "roomId",
+        "jumlah",
+        "satuan",
+        "kondisi",
+        "statusVerifikasi",
+        "sumberDana",
+        "hargaSatuan",
+        "tanggalPerolehan",
+        "keterangan",
+        "ownerId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Riwayat aktivitas perubahan dan verifikasi akurasi data inventaris.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "itemId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "kodeBarang": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 40
+        },
+        "namaBarang": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "aksi": {
+          "type": "string",
+          "enum": ["Tambah Barang", "Perbarui Data", "Audit Kondisi", "Hapus Barang"]
+        },
+        "catatan": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "petugas": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "itemId", "kodeBarang", "namaBarang", "aksi", "catatan", "petugas", "ownerId", "createdAt"]
+    },
+    "SchoolProfile": {
+      "title": "SchoolProfile",
+      "description": "Profil identitas resmi sekolah dan pejabat penanggung jawab inventaris.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "ownerId": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "maxLength": 128
+        },
+        "namaSekolah": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "npsn": {
+          "type": "string",
+          "pattern": "^[0-9]{4,16}$",
+          "maxLength": 16
+        },
+        "statusAkreditasi": {
+          "type": "string",
+          "enum": ["A", "B", "C", "Belum Terakreditasi"]
+        },
+        "alamat": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 200
+        },
+        "kecamatan": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "kabupaten": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "provinsi": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "kodePos": {
+          "type": "string",
+          "pattern": "^[0-9]{5}$",
+          "maxLength": 5
+        },
+        "telepon": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "emailSekolah": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "kepalaSekolah": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "nipKepalaSekolah": {
+          "type": "string",
+          "maxLength": 30
+        },
+        "pengurusBarang": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "tahunAnggaran": {
+          "type": "string",
+          "pattern": "^[0-9]{4}$",
+          "maxLength": 4
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "namaSekolah",
+        "npsn",
+        "statusAkreditasi",
+        "alamat",
+        "kecamatan",
+        "kabupaten",
+        "provinsi",
+        "kodePos",
+        "telepon",
+        "emailSekolah",
+        "kepalaSekolah",
+        "nipKepalaSekolah",
+        "pengurusBarang",
+        "tahunAnggaran",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Profil pengguna sekolah dengan isolasi PII per UID."
+    },
+    "/rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/Room" },
+      "description": "Daftar ruangan sekolah untuk pengelompokan lokasi barang."
+    },
+    "/inventory_items/{itemId}": {
+      "schema": { "$ref": "#/entities/InventoryItem" },
+      "description": "Koleksi utama data inventaris barang SDN 006 Sungai Buluh."
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Catatan riwayat audit dan mutasi inventaris."
+    },
+    "/school_profiles/{profileId}": {
+      "schema": { "$ref": "#/entities/SchoolProfile" },
+      "description": "Profil identitas resmi sekolah dan pengurus barang inventaris."
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "INVENTARIS BARANG SDN 006 SUNGAI BULUH",
+  "description": "Sistem manajemen inventaris barang dan aset sekolah SDN 006 Sungai Buluh untuk pendataan yang rapi, terstruktur, dan akurat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
